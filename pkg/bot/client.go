@@ -9,7 +9,6 @@ import (
 
 const (
 	telegramBaseURL = "https://api.telegram.org/bot"
-	token           = "5644445038:AAFTsJWu8JSITroIN_poVLIljojgaDMVXmc"
 )
 
 type Client struct {
