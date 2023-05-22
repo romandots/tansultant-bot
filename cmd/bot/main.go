@@ -3,21 +3,39 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"tansulbot/pkg/bot"
 )
 
-const (
-	telegramToken = "SECRET_TOKEN"
-)
-
 func main() {
-	c := bot.NewClient(telegramToken)
-	updates, err := c.GetUpdates()
-	if err != nil {
-		log.Println("Error getting updates:", err)
+	fmt.Println("Starting work")
+
+	telegramToken := os.Getenv("TELEGRAM_TOKEN")
+	if telegramToken == "" {
+		log.Println("Set the telegram token first")
 		return
 	}
 
-	fmt.Println(updates)
+	c := bot.NewClient(telegramToken)
+
+	go func() {
+		for commandError := range c.Errors {
+			if commandError != nil {
+				fmt.Println("Error running command:", commandError.Error())
+			}
+		}
+	}()
+
+	for {
+		updates, err := c.GetUpdates()
+		if err != nil {
+			fmt.Println("Error getting updates:", err)
+		}
+
+		c.ReadUpdates(updates.Result)
+
+		time.Sleep(1 * time.Second)
+	}
 }
