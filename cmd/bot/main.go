@@ -1,41 +1,26 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"time"
-
-	"tansulbot/pkg/bot"
+	"tansulbot/internal/models"
 )
 
-func main() {
-	fmt.Println("Starting work")
+var app *models.App
 
+func main() {
 	telegramToken := os.Getenv("TELEGRAM_TOKEN")
 	if telegramToken == "" {
-		log.Println("Set the telegram token first")
-		return
+		log.Fatalf("Set the telegram token first")
 	}
 
-	c := bot.NewClient(telegramToken)
-
-	go func() {
-		for commandError := range c.Errors {
-			if commandError != nil {
-				fmt.Println("Error running command:", commandError.Error())
-			}
-		}
-	}()
-
-	for {
-		updates, err := c.GetUpdates()
-		if err != nil {
-			fmt.Println("Error getting updates:", err)
-		}
-
-		c.ReadUpdates(updates.Result)
-
-		time.Sleep(1 * time.Second)
+	var err error
+	app, err = models.InitApp(telegramToken)
+	if err != nil {
+		log.Fatalf("Error initializing app: %v", err)
 	}
+	defer app.Close()
+
+	go app.WaitForErrors()
+	app.ReadTelegramUpdates()
 }

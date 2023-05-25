@@ -1,10 +1,9 @@
-package bot
+package telegram
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/url"
 )
 
@@ -12,31 +11,13 @@ const (
 	telegramBaseURL = "https://api.telegram.org/bot"
 )
 
-func NewClient(token string) *Client {
-	fmt.Println("Creating client")
-	client := &Client{
-		token:         token,
-		httpClient:    &http.Client{},
-		commands:      make(map[string]Command),
-		conversations: make(map[int]*Conversation),
-		Errors:        make(chan error, 100),
-	}
-
-	client.commands["/start"] = Command{"/start", "Приветствие", client.CommandWelcome}
-	client.commands["/stop"] = Command{"/stop", "Конец игры!", client.CommandGoodbye}
-
-	fmt.Println(client)
-
-	return client
-}
-
 func (c *Client) getUrl(endpoint string) string {
-	return telegramBaseURL + c.token + endpoint
+	return telegramBaseURL + c.Token + endpoint
 }
 
 func (c *Client) request(endpoint string) ([]byte, error) {
 	url := c.getUrl(endpoint)
-	resp, err := c.httpClient.Get(url)
+	resp, err := c.HttpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +38,7 @@ func (c *Client) requestf(format string, a ...interface{}) ([]byte, error) {
 }
 
 func (c *Client) interpretCommand(message string) (*Command, bool) {
-	command, exists := c.commands[message]
+	command, exists := c.Commands[message]
 
 	return &command, exists
 }
@@ -115,7 +96,7 @@ func (c *Client) ReadUpdates(updates []Update) {
 		fmt.Println("Получено сообщение", update)
 
 		// Act according to conversation state
-		conversationState := c.getConversationState(&update.Message.Chat)
+		conversationState := c.getConversationState(&update.Message)
 		switch conversationState {
 		case Unauthorized:
 			c.CommandWelcome(&update.Message)

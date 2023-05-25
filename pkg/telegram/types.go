@@ -1,20 +1,31 @@
-package bot
+package telegram
 
-import "net/http"
+import (
+	"net/http"
+)
+
+type ConversationState int
+
+type Conversation struct {
+	ChatId      int
+	UserId      int
+	PhoneNumber string
+	State       ConversationState
+}
+
+type Client struct {
+	Token         string
+	HttpClient    *http.Client
+	Commands      map[string]Command
+	Conversations map[int]*Conversation
+	Errors        chan error
+	lastUpdateId  int
+}
 
 type Command struct {
 	Command     string
 	Description string
 	Handle      func(message *Message) (string, error)
-}
-
-type Client struct {
-	token         string
-	httpClient    *http.Client
-	lastUpdateId  int
-	commands      map[string]Command
-	conversations map[int]*Conversation
-	Errors        chan error
 }
 
 type KeyboardButton struct {
