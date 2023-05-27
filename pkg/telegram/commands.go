@@ -15,14 +15,19 @@ func (c *Client) CommandWelcome(message *Message) (string, error) {
 }
 
 func (c *Client) CommandAuthorize(message *Message) (string, error) {
-	fmt.Println("Сохраняем номер телефона в диалог...")
+	fmt.Println("Выполняем команду авторизации")
 	error := c.attachUserPhoneNumberToConversation(message)
 	if error != nil {
+		fmt.Println("Не удалось сохранить телефон", error)
 		return "", error
 	}
+	fmt.Println("Успешно сохранили номер телефона")
 
 	c.setConversationState(message, Idle)
-	conversation := c.getConversation(message)
+	conversation, _, err := c.getConversation(message)
+	if err != nil {
+		return "", err
+	}
 
 	return "Ура! Теперь мы знаем, кто ты! " + conversation.PhoneNumber, nil
 }

@@ -4,6 +4,11 @@ import (
 	"net/http"
 )
 
+type AppInterface interface {
+	SaveConversation(conversation *Conversation) error
+	GetConversation(userId int) (*Conversation, bool, error)
+}
+
 type ConversationState int
 
 type Conversation struct {
@@ -14,6 +19,7 @@ type Conversation struct {
 }
 
 type Client struct {
+	App           AppInterface
 	Token         string
 	HttpClient    *http.Client
 	Commands      map[string]Command

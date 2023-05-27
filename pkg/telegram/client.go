@@ -86,31 +86,50 @@ func (c *Client) GetUpdates() (*TelegramResponse, error) {
 
 	return &tr, err
 }
-
 func (c *Client) ReadUpdates(updates []Update) {
 	for _, update := range updates {
 		var reply string
-		var error error
+		var err error
 		c.lastUpdateId = update.UpdateId
 
 		fmt.Println("Получено сообщение", update)
 
 		// Act according to conversation state
-		conversationState := c.getConversationState(&update.Message)
+		conversationState, err := c.getConversationState(&update.Message)
+		if err != nil {
+			c.Errors <- err
+		}
+		logMessage := fmt.Sprintf("Conversation status is %d", conversationState)
+		fmt.Println(logMessage)
+		c.SendMessage(&update.Message.Chat, logMessage)
+
 		switch conversationState {
 		case Unauthorized:
+			fmt.Println("State: Unauthorized")
+			c.SendMessage(&update.Message.Chat, "Реагируем на состояние 'неавторизован'")
 			c.CommandWelcome(&update.Message)
+			break
 		case Authorization:
-			reply, error = c.CommandAuthorize(&update.Message)
-			if error != nil {
+			fmt.Println("State: Authorization")
+			c.SendMessage(&update.Message.Chat, "Реагируем на состояние 'авторизация'")
+			reply, err = c.CommandAuthorize(&update.Message)
+			if err != nil {
+				fmt.Println("Error in CommandAuthorize:", err)
 				c.CommandWelcome(&update.Message)
 			}
+			break
 		default:
+			fmt.Println("" +
+				"State: Default")
+			c.SendMessage(&update.Message.Chat, "Реагируем на состояние 'ожидание'")
 			command, exists := c.interpretCommand(update.Message.Text)
 			fmt.Println(command, exists)
 			if exists {
 				fmt.Printf("Обнаружена команда: %s\n", command.Description)
-				reply, error = c.runCommand(command, &update.Message)
+				reply, err = c.runCommand(command, &update.Message)
+				if err != nil {
+					fmt.Println("Error in runCommand:", err)
+				}
 			}
 		}
 

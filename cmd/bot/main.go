@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 	"os"
-	"tansulbot/internal/models"
+	"tansulbot/pkg/app"
 )
 
-var app *models.App
+var a *app.App
 
 func main() {
 	telegramToken := os.Getenv("TELEGRAM_TOKEN")
@@ -15,12 +15,19 @@ func main() {
 	}
 
 	var err error
-	app, err = models.InitApp(telegramToken)
+	a, err = app.InitApp(telegramToken)
 	if err != nil {
 		log.Fatalf("Error initializing app: %v", err)
 	}
-	defer app.Close()
+	defer a.Close()
 
-	go app.WaitForErrors()
-	app.ReadTelegramUpdates()
+	// Drop all data from the database
+	//err = a.DropAll()
+	//if err != nil {
+	//	fmt.Println("Error dropping database:", err)
+	//	return
+	//}
+
+	go a.WaitForErrors()
+	a.ReadTelegramUpdates()
 }
