@@ -99,44 +99,44 @@ func (c *Client) ReadUpdates(updates []Update) {
 		if err != nil {
 			c.Errors <- err
 		}
-		logMessage := fmt.Sprintf("Conversation status is %d", conversationState)
-		fmt.Println(logMessage)
-		c.SendMessage(&update.Message.Chat, logMessage)
 
-		switch conversationState {
-		case Unauthorized:
-			fmt.Println("State: Unauthorized")
-			c.SendMessage(&update.Message.Chat, "Реагируем на состояние 'неавторизован'")
-			c.CommandWelcome(&update.Message)
-			break
-		case Authorization:
-			fmt.Println("State: Authorization")
-			c.SendMessage(&update.Message.Chat, "Реагируем на состояние 'авторизация'")
-			reply, err = c.CommandAuthorize(&update.Message)
-			if err != nil {
-				fmt.Println("Error in CommandAuthorize:", err)
-				c.CommandWelcome(&update.Message)
-			}
-			break
-		default:
-			fmt.Println("" +
-				"State: Default")
-			c.SendMessage(&update.Message.Chat, "Реагируем на состояние 'ожидание'")
-			command, exists := c.interpretCommand(update.Message.Text)
-			fmt.Println(command, exists)
-			if exists {
-				fmt.Printf("Обнаружена команда: %s\n", command.Description)
-				reply, err = c.runCommand(command, &update.Message)
-				if err != nil {
-					fmt.Println("Error in runCommand:", err)
-				}
-			}
-		}
+		reply, err = c.reactAccordingToConversationState(&update.Message, conversationState)
 
 		// Reply to the message
 		if reply != "" {
 			c.SendMessage(&update.Message.Chat, reply)
 		}
+
+		c.Errors <- err
+	}
+}
+
+func (c *Client) reactAccordingToConversationState(message *Message, state ConversationState) (string, error) {
+	switch state {
+	case Unauthorized:
+		fmt.Println("State: Unauthorized")
+		return c.CommandWelcome(message)
+	case Authorization:
+		fmt.Println("State: Authorization")
+		reply, err := c.CommandAuthorize(message)
+		if err != nil {
+			fmt.Println("Error in CommandAuthorize:", err)
+			return c.CommandWelcome(message)
+		}
+		return reply, err
+	default:
+		fmt.Println("State: Default")
+		command, exists := c.interpretCommand(message.Text)
+		if !exists {
+			return "", nil
+		}
+
+		fmt.Printf("Обнаружена команда: %s\n", command.Description)
+		reply, err := c.runCommand(command, message)
+		if err != nil {
+			fmt.Println("Error in runCommand:", err)
+		}
+		return reply, err
 	}
 }
 
